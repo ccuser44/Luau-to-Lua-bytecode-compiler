@@ -50,7 +50,7 @@ return function(sourcecode, options)
 		luaU:dump(LuaState, proto, writer, buff)
 	end)
 	
-	if success and buff then
+	if success then
 		return success, buff.data, buff
 	else
 		return success, error, nil
