@@ -51,8 +51,8 @@ return function(sourcecode, options)
 	end)
 	
 	if success and buff then
-		return buff.data, buff
+		return success, buff.data, buff
 	else
-		return nil, error
+		return success, error, nil
 	end
 end
