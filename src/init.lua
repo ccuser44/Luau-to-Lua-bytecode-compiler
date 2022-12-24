@@ -1,54 +1,56 @@
 --[[
-	Credit to einsteinK.
-	Credit to Stravant for LBI.
-	
-	Credit to the creators of all the other modules used in this.
-	
-	Sceleratis was here and decided modify some things.
-	
-	einsteinK was here again to fix a bug in LBI for if-statements
---]]
+	Title: Luau to Lua bytecode compiler
+	Author: ccuser44
+	License: MIT
+]]
+--[[
+	MIT License
 
-local waitDeps = {
-	'FiOne';
-	'LuaK';
-	'LuaP';
-	'LuaU';
-	'LuaX';
-	'LuaY';
-	'LuaZ';
-}
+	Copyright (c) 2022 ccuser44
 
-for _, v in ipairs(waitDeps) do 
-	script:WaitForChild(v)
-end
+	Permission is hereby granted, free of charge, to any person obtaining a copy
+	of this software and associated documentation files (the "Software"), to deal
+	in the Software without restriction, including without limitation the rights
+	to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+	copies of the Software, and to permit persons to whom the Software is
+	furnished to do so, subject to the following conditions:
 
-local luaX = require(script.LuaX)
-local luaY = require(script.LuaY)
-local luaZ = require(script.LuaZ)
-local luaU = require(script.LuaU)
-local fiOne = require(script.FiOne)
+	The above copyright notice and this permission notice shall be included in all
+	copies or substantial portions of the Software.
 
-luaX:init()
+	THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+	IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+	FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+	AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+	SOFTWARE.
+]]
+
+local luaZ = require("./LuaZ")
+local luaX = require("./LuaX")
+local luaY = require("./LuaY")
+local luaU = require("./LuaU")
 local LuaState = {}
 
-getfenv().script = nil
+luaX:init()
 
-return function(str,env)
-	local f, writer, buff
-	env = env or getfenv(2)
-	local name = (env.script and env.script:GetFullName())
-	local ran, error = pcall(function()
-		local zio = luaZ:init(luaZ:make_getS(str), nil)
-		if not zio then return error() end
-		local func = luaY:parser(LuaState, zio, nil, name or "::Adonis::Loadstring::")
+return function(sourcecode, options)
+	assert(type(sourcecode) == "string", string.format("bad argument #1 (string expected, got %s)", type(sourcecode)))
+	assert(options == nil or type(options) == "table", string.format("bad argument #2 (table expected, got %s)", type(options)))
+
+	local writer, buff
+	local scriptname = options and options.scriptname
+
+	local success, error = pcall(function()
+		local stream = assert(luaZ:init(luaZ:make_getS(sourcecode), nil), "LuaZ did not generate a buffered stream")
+		local proto = luaY:parser(LuaState, stream, nil, scriptname or "@input")
 		writer, buff = luaU:make_setS()
-		luaU:dump(LuaState, func, writer, buff)
-		f = fiOne(buff.data, env)
+		luaU:dump(LuaState, proto, writer, buff)
 	end)
 	
-	if ran then
-		return f, buff.data
+	if success and buff then
+		return buff.data, buff
 	else
 		return nil, error
 	end
