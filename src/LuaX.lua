@@ -69,7 +69,7 @@
 --
 --------------------------------------------------------------------]]
 
-local luaZ = require(script.Parent.LuaZ)
+local luaZ = require("./LuaZ")
 
 local luaX = {}
 
