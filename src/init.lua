@@ -1,6 +1,7 @@
 --[[
 	Title: Luau to Lua bytecode compiler
 	Author: ccuser44
+	Date: 24.12.2022
 	License: MIT
 ]]
 --[[
