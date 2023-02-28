@@ -385,21 +385,49 @@ end
 -- * returns the number, nil if fails (originally returns a boolean)
 -- * conversion function originally lua_str2number(s,p), a macro which
 --   maps to the strtod() function by default (from luaconf.h)
+-- * ccuser44 was here to add support for binary intiger constants
 ------------------------------------------------------------------------
 function luaX:str2d(s)
-  local result = tonumber(s)
-  if result then return result end
-  -- conversion failed
-  if string.lower(string.sub(s, 1, 2)) == "0x" then  -- maybe an hexadecimal constant?
-    result = tonumber(s, 16)
-    if result then return result end  -- most common case
-    -- Was: invalid trailing characters?
-    -- In C, this function then skips over trailing spaces.
-    -- true is returned if nothing else is found except for spaces.
-    -- If there is still something else, then it returns a false.
-    -- All this is not necessary using Lua's tonumber.
-  end
-  return nil
+	--[[ --Disabled because This is not Luau but vanilla Lua
+	-- Support for Luau decimal seperators for integer literals
+	if string.match(string.lower(s), "[^b%da-f_]_") or string.match(string.lower(s), "_[^%da-f_]") then
+		return nil
+	end
+	s = string.gsub(s, "_", "")
+	]]
+
+	local result = tonumber(s)
+	if result then return result end
+	-- conversion failed
+
+	if string.lower(string.sub(s, 1, 2)) == "0x" then  -- maybe an hexadecimal constant?
+		result = tonumber(s, 16)
+		if result then return result end  -- most common case
+		-- Was: invalid trailing characters?
+		-- In C, this function then skips over trailing spaces.
+		-- true is returned if nothing else is found except for spaces.
+		-- If there is still something else, then it returns a false.
+		-- All this is not necessary using Lua's tonumber.
+	elseif string.lower(string.sub(s, 1, 2)) == "0b" then  -- binary intiger constants
+		local bin_str = string.sub(s, 3)
+
+		if string.match(bin_str, "[^01]") then
+			return nil
+		elseif tonumber(bin_str, 2) then
+			return tonumber(bin_str, 2)
+		end
+
+		local bin = string.reverse(bin_str)
+		local sum = 0
+
+		for i = 1, string.len(bin) do
+			num = string.sub(bin, i, i) == "1" and 1 or 0
+			sum = sum + num * (2, (i - 1))
+		end
+
+		return sum
+	end
+	return nil
 end
 
 ------------------------------------------------------------------------
@@ -565,7 +593,7 @@ function luaX:read_string(ls, del, Token)
 					assert(utf8 and utf8.char, "No utf8 library found! Cannot decode UTF8 string literal!")
 
 					if self:nextc(ls) ~= "{" then
-						self:lexerror("Sounds like a skill issue", "TK_STRING")
+						self:lexerror("Missing { bracket for UTF8 literal", "TK_STRING")
 					end
 
 					local unicodeCharacter = ""
